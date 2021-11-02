@@ -7,6 +7,8 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+cookiecutter = "^1.7.3"
+loguru = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
 ipython = "^7.29.0"
@@ -51,5 +53,14 @@ testpaths = [
 [tool.coverage.run]
 branch = true
 source = [
-    "src"
+    "hooks"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    # Have to re-enable the standard pragma
+    "pragma: no cover",
+
+    # Cannot cover lines meant to be run in script mode
+    'if __name__ == "__main__"'
 ]
