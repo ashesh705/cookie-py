@@ -28,4 +28,4 @@ jobs:
                     poetry add -D codecov
             -   name: Test
                 run: |
-                    poetry run task test && poetry run codecov
+                    poetry run task test-ci && poetry run codecov

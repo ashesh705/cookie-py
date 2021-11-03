@@ -2,6 +2,7 @@
 
 import os
 import shutil
+import sys
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
@@ -35,3 +36,11 @@ def temp_dir() -> Generator[Path, None, None]:
     if d.exists():
         logger.debug(f"Deleting {d}")
         shutil.rmtree(d)
+
+
+@pytest.fixture(scope="session")
+def current_python_version() -> str:
+    """Returns the current python version"""
+
+    v = sys.version_info
+    return f"{v.major}.{v.minor}.{v.micro}"

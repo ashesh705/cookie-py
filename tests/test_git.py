@@ -5,18 +5,25 @@ from pathlib import Path
 import pytest
 from loguru import logger
 
-from hooks.post_gen_project import initialize_git_repo
+from hooks.post_gen_project import Git
 
 
-def test_git_repo_valid(temp_dir: Path) -> None:
-    logger.debug(f"Creating directory {temp_dir}")
-    temp_dir.mkdir()
+class TestGit:
+    def test_empty_dir(self, temp_dir: Path) -> None:
+        logger.debug(f"Creating directory {temp_dir}")
+        temp_dir.mkdir()
 
-    initialize_git_repo(temp_dir)
+        assert Git.init(temp_dir) is True
+        assert Git.is_repository(temp_dir) is True
 
-    assert ".git" in map(lambda p: p.name, temp_dir.glob("*"))
+    def test_pre_existing_repo(self, temp_dir: Path) -> None:
+        logger.debug(f"Creating directory {temp_dir}")
+        temp_dir.mkdir()
+        Git.init(temp_dir)
 
+        assert Git.init(temp_dir) is False
+        assert Git.is_repository(temp_dir) is True
 
-def test_git_repo_invalid(temp_dir: Path) -> None:
-    with pytest.raises(NotADirectoryError):
-        initialize_git_repo(temp_dir)
+    def test_invalid_dir(self, temp_dir: Path) -> None:
+        with pytest.raises(NotADirectoryError):
+            Git.init(temp_dir)

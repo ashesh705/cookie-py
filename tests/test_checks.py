@@ -2,15 +2,16 @@
 
 import pytest
 
-from hooks.pre_gen_project import Unsupported, check_py_version
+from hooks.pre_gen_project import PyVersion, Unsupported
 
 
-def test_check_correct_py_version() -> None:
-    v = "3.9.0"
-    check_py_version(v)
+class TestPyVersion:
+    correct = "3.9.0"
+    incorrect = "2.9.0"
 
+    def test_correct(self) -> None:
+        PyVersion.check(self.correct)
 
-def test_check_incorrect_py_version() -> None:
-    v = "2.9.0"
-    with pytest.raises(Unsupported):
-        check_py_version(v)
+    def test_incorrect(self) -> None:
+        with pytest.raises(Unsupported):
+            PyVersion.check(self.incorrect)
