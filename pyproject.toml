@@ -7,6 +7,8 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+cookiecutter = "^1.7.3"
+loguru = "^0.5.3"
 
 [tool.poetry.dev-dependencies]
 ipython = "^7.29.0"
@@ -38,12 +40,16 @@ disallow_untyped_defs = true
 
 [tool.taskipy.tasks]
 format = { cmd = "isort . && black .", help = "Fix all code formatting issues" }
-format-check = { cmd = "isort . -c && black --check .", help = "Check code for formatting issues" }
+format-check = { cmd = "isort . -c && black --check .", help = "Check code for any formatting issues" }
 lint-check = { cmd = "flake8 && mypy .", help = "Check code for any lint issues" }
 test = { cmd = "python -m pytest --cov", help = "Run all unit tests and produce coverage reports" }
+test-ci = { cmd = "task test -m \"not no_ci\"", help = "Run all unit tests and produce coverage reports" }
 
 [tool.pytest.ini_options]
 addopts = "-ra -v"
+markers = [
+    "no_ci: exclude tests from running in CI"
+]
 testpaths = [
     "tests",
 ]
@@ -51,5 +57,13 @@ testpaths = [
 [tool.coverage.run]
 branch = true
 source = [
-    "src"
+    "hooks"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    # Have to re-enable the standard pragma
+    "pragma: no cover",
+    # Cannot cover lines meant to be run in script mode
+    'if __name__ == "__main__"'
 ]
