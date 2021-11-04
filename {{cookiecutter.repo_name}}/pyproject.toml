@@ -1,26 +1,15 @@
 [tool.poetry]
-name = "cookie-py"
-version = "0.1.0"
-description = "Cookiecutter template to generate python projects"
-authors = ["Ashesh Anand <62696185+ashesh705@users.noreply.github.com>"]
+name = "{{ cookiecutter.project_name }}"
+version = "{{ cookiecutter.project_version }}"
+description = "{{ cookiecutter.project_description }}"
+authors = ["{{ cookiecutter.author_name }} {{ cookiecutter.author_email }}"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.9"
-cookiecutter = "^1.7.3"
-loguru = "^0.5.3"
+python = "{{ cookiecutter.python_version }}"
 
 [tool.poetry.dev-dependencies]
-ipython = "^7.29.0"
-isort = "^5.9.3"
-black = "^21.10b0"
-flake8 = "^4.0.1"
-mypy = "^0.910"
-pre-commit = "^2.15.0"
-taskipy = "^1.9.0"
-pytest = "^6.2.5"
-pytest-cov = "^3.0.0"
-pytest-sugar = "^0.9.4"
+
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -43,7 +32,7 @@ format = { cmd = "isort . && black .", help = "Fix all code formatting issues" }
 format-check = { cmd = "isort . -c && black --check .", help = "Check code for any formatting issues" }
 lint-check = { cmd = "flake8 && mypy .", help = "Check code for any lint issues" }
 test = { cmd = "python -m pytest --cov", help = "Run all unit tests and produce coverage reports" }
-test-ci = { cmd = "task test -m \"not no_ci\"", help = "Run all unit tests and produce coverage reports" }
+test-ci = { cmd = "task test -m \"not no_ci\"", help = "Run all unit tests in CI and produce coverage reports" }
 
 [tool.pytest.ini_options]
 addopts = "-ra -v"
@@ -57,7 +46,7 @@ testpaths = [
 [tool.coverage.run]
 branch = true
 source = [
-    "hooks"
+    "src"
 ]
 
 [tool.coverage.report]
