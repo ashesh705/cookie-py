@@ -82,3 +82,24 @@ class TestPyEnv:
 
         ver = self.get_random_uninstalled_version()
         assert PyEnv.set_active(ver, temp_dir) is False
+
+    def test_set_active_invalid_dir(
+        self, temp_dir: Path, current_python_version: str
+    ) -> None:
+        with pytest.raises(NotADirectoryError):
+            PyEnv.set_active(current_python_version, temp_dir)
+
+    def test_get_path_valid_dir(
+        self, temp_dir: Path, current_python_version: str
+    ) -> None:
+        logger.debug(f"Creating directory {temp_dir}")
+        temp_dir.mkdir()
+
+        PyEnv.set_active(current_python_version, temp_dir)
+
+        path = PyEnv.get_path_for_active_python(temp_dir)
+        assert path.exists() is True
+
+    def test_get_path_invalid_dir(self, temp_dir: Path) -> None:
+        with pytest.raises(NotADirectoryError):
+            PyEnv.get_path_for_active_python(temp_dir)

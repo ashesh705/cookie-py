@@ -1,8 +1,28 @@
 """ Validate input parameters for project generation"""
 
 import sys
+from collections.abc import Callable
+from datetime import datetime
+from typing import Any
 
 from loguru import logger
+
+
+def trace(f: Callable) -> Callable:
+    """Decorator to trace a function execution"""
+
+    def _(*args: Any, **kwargs: Any) -> Any:
+        start = datetime.now()
+
+        ret = f(*args, **kwargs)
+        end = datetime.now()
+
+        time_elapsed = (end - start).total_seconds() * 1000  # in ms
+        logger.info(f"Completed in {time_elapsed:.0f} ms")
+
+        return ret
+
+    return _
 
 
 class Unsupported(Exception):
@@ -16,6 +36,7 @@ class PyVersion:
     MIN_PYTHON_VERSION = "3.0.0"
 
     @classmethod
+    @trace
     def check(cls, ver: str) -> None:
         """Check if supplied python version is supported"""
 
@@ -32,6 +53,6 @@ if __name__ == "__main__":
         # Test if the required python version is supported
         py_ver = "{{ cookiecutter.python_version }}"
         PyVersion.check(py_ver)
-    except Exception as e:
+    except Unsupported as e:
         logger.error(str(e))
         sys.exit(1)
