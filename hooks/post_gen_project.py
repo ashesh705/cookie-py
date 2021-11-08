@@ -1,53 +1,177 @@
 """ Post-project generation tasks"""
 
+import json
+import logging
 import os
 import subprocess
 import sys
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple, Optional
 
-from loguru import logger
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%d-%b-%Y %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 
-def trace(f: Callable) -> Callable:
+def trace(func: Callable) -> Callable:
     """Decorator to trace a function execution"""
 
     def _(*args: Any, **kwargs: Any) -> Any:
         start = datetime.now()
 
-        ret = f(*args, **kwargs)
+        ret = func(*args, **kwargs)
         end = datetime.now()
 
         time_elapsed = (end - start).total_seconds() * 1000  # in ms
-        logger.info(f"Completed in {time_elapsed:.0f} ms")
+        logger.info(f"Completed in {time_elapsed:,.0f} ms")
 
         return ret
 
     return _
 
 
-# ToDo - Name it better
 class Failure(Exception):
     """Exception to raise if any step fails"""
 
     pass
 
 
-def run(cmd: list, shell: bool = False) -> str:
+class _Task(NamedTuple):
+    """Task to execute during cleanup stage"""
+
+    func: Callable
+    args: Optional[tuple] = None
+
+
+def run(cmd: list) -> str:
     """Helper function to run system commands"""
 
     try:
-        s = subprocess.run(cmd, shell=shell, check=True, capture_output=True)
+        s = subprocess.run(cmd, shell=True, check=True, capture_output=True)
     except subprocess.CalledProcessError as error:
         out = error.stderr or error.stdout
         raise Failure(out.decode().strip())
 
-    return s.stdout.decode().strip()
+    return s.stdout.decode("iso-8859-1").strip()
 
 
-class Git:
+class PyEnv:  # pragma: no cover
+    """Coverage disabled as this cannot be tested in CI environment"""
+
+    command = "pyenv"
+
+    @staticmethod
+    def _is_python_version(s: str) -> bool:
+        """Check whether the given string represents a valid python version"""
+
+        return s.startswith("2") or s.startswith("3")
+
+    @classmethod
+    def get_installed_versions(cls) -> list[str]:
+        """Get a list of installed python versions"""
+
+        pyenv_root = os.getenv("PYENV_ROOT")
+        if pyenv_root is None:
+            raise Failure("PYENV_ROOT is not configured")
+
+        root_dir = Path(pyenv_root)
+        version_dir = root_dir / "versions"
+
+        return [i.name for i in version_dir.iterdir() if i.is_dir()]
+
+    @classmethod
+    def get_all_versions(cls) -> list[str]:
+        """Get a list of all available python versions"""
+
+        s = run([cls.command, "install", "-l"])
+        versions = s.split()
+
+        return list(filter(cls._is_python_version, versions))
+
+    @classmethod
+    def is_installed(cls, ver: str) -> bool:
+        """Check if the given python version is installed"""
+
+        return ver in cls.get_installed_versions()
+
+    @classmethod
+    def can_install(cls, ver: str) -> bool:
+        """Check if the given python version can be installed"""
+
+        return ver in cls.get_all_versions()
+
+    @classmethod
+    @trace
+    def install(cls, ver: str) -> bool:
+        """Install the given python version"""
+
+        if cls.is_installed(ver):
+            logger.info(f"{ver} is already installed, skipping installation")
+            return False
+
+        if not cls.can_install(ver):
+            raise Failure(f"{ver} is not available for installation")
+
+        logger.info(f"Installing python version {ver}")
+        run([cls.command, "install", ver])
+
+        return True
+
+    @classmethod
+    @trace
+    def uninstall(cls, ver: str) -> bool:
+        """Uninstall the given python version"""
+
+        if not cls.is_installed(ver):
+            logger.info(f"{ver} is not installed, cannot uninstall")
+            return False
+
+        logger.info(f"Uninstalling python version {ver}")
+        run([cls.command, "uninstall", ver])
+
+        return True
+
+    @classmethod
+    @trace
+    def set_active(cls, directory: Path, ver: str) -> None:
+        """Set the given python version as active in the given directory"""
+
+        if directory.is_dir() is False:
+            raise Failure(f"{directory} is not a valid directory")
+
+        if not cls.is_installed(ver):
+            raise Failure(f"{ver} is not installed, cannot set as active")
+
+        logger.info(f"Setting python version {ver} as active in {directory}")
+
+        os.chdir(directory)
+        run([cls.command, "local", ver])
+
+    @classmethod
+    def get_path(cls, directory: Path) -> Path:
+        """Get the path for active python in the given directory"""
+
+        if directory.is_dir() is False:
+            raise Failure(f"{directory} is not a valid directory")
+
+        os.chdir(directory)
+        s = run([cls.command, "which", "python"])
+
+        path = Path(s)
+        if not path.exists():
+            raise Failure(f"No installed python version set in {directory}")
+
+        return path
+
+
+class Git:  # pragma: no cover
+    """Coverage disabled as this cannot be tested in CI environment"""
+
     command = "git"
 
     @classmethod
@@ -63,7 +187,7 @@ class Git:
         """Initialize a git repository in the given directory"""
 
         if directory.is_dir() is False:
-            raise NotADirectoryError(f"{directory} is not a valid directory")
+            raise Failure(f"{directory} is not a valid directory")
 
         if cls.is_repository(directory):
             logger.info(f"{directory} already has git initialized, skipping")
@@ -77,147 +201,156 @@ class Git:
         return True
 
 
-class PyEnv:  # pragma: no cover
-    """Coverage disabled as these cannot be tested in CI environment"""
-
-    command = "pyenv"
-
-    @classmethod
-    def get_installed_versions(cls) -> list[str]:
-        """Get a list of installed python versions"""
-
-        pyenv_root = os.getenv("PYENV_ROOT")
-        if pyenv_root is None:
-            raise EnvironmentError("PYENV_ROOT is not configured")
-
-        root_dir = Path(pyenv_root)
-        version_dir = root_dir / "versions"
-
-        return [f.name for f in version_dir.iterdir() if f.is_dir()]
-
-    @classmethod
-    def get_all_versions(cls) -> list[str]:
-        """Get a list of all available python versions"""
-
-        s = run([cls.command, "install", "-l"], shell=True)
-        versions = s.split()
-
-        # Restrict to python 3
-        return [v for v in versions if v.startswith("3")]
-
-    @classmethod
-    def is_installed(cls, ver: str) -> bool:
-        """Check if the given python version is installed"""
-
-        return ver in cls.get_installed_versions()
-
-    @classmethod
-    @trace
-    def install(cls, ver: str) -> bool:
-        """Install the given python version"""
-
-        if cls.is_installed(ver):
-            logger.info(f"{ver} is already installed, skipping installation")
-            return False
-
-        logger.info(f"Installing python version {ver}")
-        run([cls.command, "install", ver], shell=True)
-
-        return True
-
-    @classmethod
-    @trace
-    def uninstall(cls, ver: str) -> bool:
-        """Uninstall the given python version"""
-
-        if not cls.is_installed(ver):
-            logger.info(f"{ver} is not installed, cannot uninstall")
-            return False
-
-        logger.info(f"Uninstalling python version {ver}")
-        run([cls.command, "uninstall", ver], shell=True)
-
-        return True
-
-    @classmethod
-    @trace
-    def set_active(cls, ver: str, directory: Path) -> bool:
-        """Set the given python version as active in the given directory"""
-
-        if directory.is_dir() is False:
-            raise NotADirectoryError(f"{directory} is not a valid directory")
-
-        if not cls.is_installed(ver):
-            logger.info(f"{ver} is not installed, cannot set as active")
-            return False
-
-        logger.info(f"Setting python version {ver} as active in {directory}")
-
-        os.chdir(directory)
-        run([cls.command, "local", ver], shell=True)
-
-        return True
-
-    @classmethod
-    def get_path_for_active_python(cls, directory: Path) -> Path:
-        """Get the path for active python in the given directory"""
-
-        if directory.is_dir() is False:
-            raise NotADirectoryError(f"{directory} is not a valid directory")
-
-        os.chdir(directory)
-        s = run([cls.command, "which", "python"], shell=True)
-
-        path = Path(s)
-        if not path.exists():
-            raise EnvironmentError(
-                f"No installed python version set in {directory}"
-            )
-
-        return path
-
-
-class Poetry:  # pragma: no cover
-    """Coverage disabled as these cannot be tested in CI environment"""
+class VirtualEnv:  # pragma: no cover
+    """Coverage disabled as this cannot be tested in CI environment"""
 
     command = "poetry"
 
     @classmethod
     @trace
-    def configure(cls, directory: Path) -> None:
-        """
-        Configure poetry to use given python version in given directory.
-        This will create a virtual environment if one does not already exist.
-        """
+    def init(cls, directory: Path) -> None:
+        """Initialize a virtual environment for the given directory"""
 
         if directory.is_dir() is False:
-            raise NotADirectoryError(f"{directory} is not a valid directory")
+            raise Failure(f"{directory} is not a valid directory")
 
-        path = PyEnv.get_path_for_active_python(directory)
-        logger.info(f"Configuring poetry to use {path}")
+        path = PyEnv.get_path(directory)
+        logger.info(f"Initializing virtual environment against {path}")
 
         os.chdir(directory)
-        out = run([cls.command, "env", "use", str(path)])
+        run([cls.command, "env", "use", str(path)])
 
-        for s in out.split():
-            logger.info(s)
+    @classmethod
+    @trace
+    def remove(cls, directory: Path) -> None:
+        """Remove the virtual environment for the given directory"""
+
+        if directory.is_dir() is False:
+            raise Failure(f"{directory} is not a valid directory")
+
+        path = PyEnv.get_path(directory)
+        logger.info(f"Removing virtual environment against {path}")
+
+        os.chdir(directory)
+        run([cls.command, "env", "remove", str(path)])
+
+
+class PackageManager:  # pragma: no cover
+    """Coverage disabled as this cannot be tested in CI environment"""
+
+    command = "poetry"
+
+    @classmethod
+    @trace
+    def install(cls, directory: Path, packages: list[str]) -> None:
+        """Install the given packages"""
+
+        if directory.is_dir() is False:
+            raise Failure(f"{directory} is not a valid directory")
+
+        logger.info(f"Installing dependencies - {', '.join(packages)}")
+
+        os.chdir(directory)
+        run([cls.command, "add"] + packages)
+
+    @classmethod
+    @trace
+    def install_dev(cls, directory: Path, packages: list[str]) -> None:
+        """Install the given packages as dev dependencies"""
+
+        if directory.is_dir() is False:
+            raise Failure(f"{directory} is not a valid directory")
+
+        logger.info(f"Installing dev dependencies - {', '.join(packages)}")
+
+        os.chdir(directory)
+        run([cls.command, "add", "-D"] + packages)
+
+
+class PreCommit:  # pragma: no cover
+    """Coverage disabled as this cannot be tested in CI environment"""
+
+    command = "pre-commit"
+
+    @classmethod
+    @trace
+    def install(cls, directory: Path) -> None:
+        """Install the pre-commit hooks"""
+
+        if directory.is_dir() is False:
+            raise Failure(f"{directory} is not a valid directory")
+
+        logger.info("Installing pre-commit hooks")
+
+        os.chdir(directory)
+        run([cls.command, "install"])
+
+    @classmethod
+    @trace
+    def run(cls, directory: Path) -> None:
+        """Install the pre-commit hooks"""
+
+        if directory.is_dir() is False:
+            raise Failure(f"{directory} is not a valid directory")
+
+        logger.info("Running pre-commit hooks on all current files")
+
+        os.chdir(directory)
+        run([cls.command, "run", "--all-files"])
 
 
 if __name__ == "__main__":
+    cleanup_stack: list[_Task] = []
+
     try:
-        # Initialize a git repo in the current directory
-        current_dir = Path.cwd()
-        Git.init(current_dir)
-
-        # Install the required python version and mark it active
+        # Install the required python version
         py_ver = "{{ cookiecutter.python_version }}"
-        PyEnv.install(py_ver)
-        PyEnv.set_active(py_ver, current_dir)
+        installed = PyEnv.install(py_ver)
 
-        # Configure poetry to use the python version in current directory.
-        # This will create a new virtual environment.
-        # This step needs a pyproject.toml, which should be already generated
-        Poetry.configure(current_dir)
-    except Failure as e:
+        if installed:
+            cleanup_stack.insert(0, _Task(func=PyEnv.uninstall, args=(py_ver,)))
+
+        # Get the project root
+        project_root = Path.cwd()
+
+        # Initialize a git repo in the project root
+        Git.init(project_root)
+
+        # Mark the active python version in the project directory
+        PyEnv.set_active(project_root, py_ver)
+
+        # Initialize a virtual environment in the project directory
+        VirtualEnv.init(project_root)
+        cleanup_stack.insert(
+            0, _Task(func=VirtualEnv.remove, args=(project_root,))
+        )
+
+        # Install required dependencies
+        file = project_root / "package-list.json"
+        with file.open() as f:
+            package_list = json.load(f)
+
+        file.unlink()
+
+        dependencies, dev_dependencies = (
+            package_list["required"],
+            package_list["dev"],
+        )
+
+        PackageManager.install(project_root, dependencies)
+        PackageManager.install_dev(project_root, dev_dependencies)
+
+        # Configure git hooks, install and run once
+        PreCommit.install(project_root)
+        PreCommit.run(project_root)
+    except Exception as e:
         logger.error(str(e))
+
+        # Cleanup
+        for task in cleanup_stack:
+            if task.args is None:
+                task.func()
+            else:
+                task.func(*task.args)
+
         sys.exit(1)

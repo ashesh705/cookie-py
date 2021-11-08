@@ -1,13 +1,10 @@
-name: Test
+name: Lint
 
 on: [ push, pull_request ]
 
 jobs:
-    Test:
-        runs-on: ${{ matrix.os }}
-        strategy:
-            matrix:
-                os: [ macos-latest, ubuntu-latest, windows-latest ]
+    Lint:
+        runs-on: ubuntu-latest
         defaults:
             run:
                 shell: bash
@@ -15,7 +12,7 @@ jobs:
             -   uses: actions/checkout@v2
             -   uses: actions/setup-python@v2
                 with:
-                    python-version: 3.9.7
+                    python-version: {{ cookiecutter.python_version }}
             -   uses: snok/install-poetry@v1
                 with:
                     virtualenvs-in-project: true
@@ -25,7 +22,6 @@ jobs:
             -   name: Install
                 run: |
                     poetry install
-                    poetry add -D codecov
-            -   name: Test
+            -   name: Check Lint
                 run: |
-                    poetry run task test && poetry run codecov
+                    poetry run task lint-check

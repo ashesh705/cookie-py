@@ -32,13 +32,9 @@ format = { cmd = "isort . && black .", help = "Fix all code formatting issues" }
 format-check = { cmd = "isort . -c && black --check .", help = "Check code for any formatting issues" }
 lint-check = { cmd = "flake8 && mypy .", help = "Check code for any lint issues" }
 test = { cmd = "python -m pytest --cov", help = "Run all unit tests and produce coverage reports" }
-test-ci = { cmd = "task test -m \"not no_ci\"", help = "Run all unit tests in CI and produce coverage reports" }
 
 [tool.pytest.ini_options]
 addopts = "-ra -v"
-markers = [
-    "no_ci: exclude tests from running in CI"
-]
 testpaths = [
     "tests",
 ]

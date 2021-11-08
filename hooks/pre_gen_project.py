@@ -1,11 +1,17 @@
 """ Validate input parameters for project generation"""
 
+import logging
 import sys
 from collections.abc import Callable
 from datetime import datetime
 from typing import Any
 
-from loguru import logger
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%d-%b-%Y %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 
 def trace(f: Callable) -> Callable:
@@ -18,7 +24,7 @@ def trace(f: Callable) -> Callable:
         end = datetime.now()
 
         time_elapsed = (end - start).total_seconds() * 1000  # in ms
-        logger.info(f"Completed in {time_elapsed:.0f} ms")
+        logger.info(f"Completed in {time_elapsed:,.0f} ms")
 
         return ret
 
@@ -53,6 +59,6 @@ if __name__ == "__main__":
         # Test if the required python version is supported
         py_ver = "{{ cookiecutter.python_version }}"
         PyVersion.check(py_ver)
-    except Unsupported as e:
+    except Exception as e:
         logger.error(str(e))
         sys.exit(1)
