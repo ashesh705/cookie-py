@@ -1,0 +1,27 @@
+name: Format
+
+on: [ push, pull_request ]
+
+jobs:
+    Format:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                shell: bash
+        steps:
+            -   uses: actions/checkout@v2
+            -   uses: actions/setup-python@v2
+                with:
+                    python-version: {{ cookiecutter.python_version }}
+            -   uses: snok/install-poetry@v1
+                with:
+                    virtualenvs-in-project: true
+            -   name: Before Install
+                run: |
+                    python --version
+            -   name: Install
+                run: |
+                    poetry install
+            -   name: Check Lint
+                run: |
+                    poetry run task format-check

@@ -1,0 +1,17 @@
+{
+    "required": [
+        "loguru"
+    ],
+    "dev": [
+        "ipython",
+        "isort",
+        "black",
+        "flake8",
+        "mypy",
+        "pre-commit",
+        "taskipy",
+        "pytest",
+        "pytest-cov",
+        "pytest-sugar"
+    ]
+}

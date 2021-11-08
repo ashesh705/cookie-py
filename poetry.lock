@@ -339,21 +339,6 @@ arrow = "*"
 jinja2 = "*"
 
 [[package]]
-name = "loguru"
-version = "0.5.3"
-description = "Python logging made (stupidly) simple"
-category = "main"
-optional = false
-python-versions = ">=3.5"
-
-[package.dependencies]
-colorama = {version = ">=0.3.4", markers = "sys_platform == \"win32\""}
-win32-setctime = {version = ">=1.0.0", markers = "sys_platform == \"win32\""}
-
-[package.extras]
-dev = ["codecov (>=2.0.15)", "colorama (>=0.3.4)", "flake8 (>=3.7.7)", "tox (>=3.9.0)", "tox-travis (>=0.12)", "pytest (>=4.6.2)", "pytest-cov (>=2.7.1)", "Sphinx (>=2.2.1)", "sphinx-autobuild (>=0.7.1)", "sphinx-rtd-theme (>=0.4.3)", "black (>=19.10b0)", "isort (>=5.1.1)"]
-
-[[package]]
 name = "markupsafe"
 version = "2.0.1"
 description = "Safely add untrusted strings to HTML/XML markup."
@@ -810,21 +795,10 @@ category = "dev"
 optional = false
 python-versions = "*"
 
-[[package]]
-name = "win32-setctime"
-version = "1.0.3"
-description = "A small Python utility to set file creation time on Windows"
-category = "main"
-optional = false
-python-versions = ">=3.5"
-
-[package.extras]
-dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "9aab4dbfb94cb7ffa1ce5f28185d02d885111ca79cb62d9dd1759796c62ae2da"
+content-hash = "97a8ed9c2f775be315ec52affb8d7b6b5ce3cde63be63795bdd9e6482e73e5df"
 
 [metadata.files]
 appnope = [
@@ -982,10 +956,6 @@ jinja2 = [
 jinja2-time = [
     {file = "jinja2-time-0.2.0.tar.gz", hash = "sha256:d14eaa4d315e7688daa4969f616f226614350c48730bfa1692d2caebd8c90d40"},
     {file = "jinja2_time-0.2.0-py2.py3-none-any.whl", hash = "sha256:d3eab6605e3ec8b7a0863df09cc1d23714908fa61aa6986a845c20ba488b4efa"},
-]
-loguru = [
-    {file = "loguru-0.5.3-py3-none-any.whl", hash = "sha256:f8087ac396b5ee5f67c963b495d615ebbceac2796379599820e324419d53667c"},
-    {file = "loguru-0.5.3.tar.gz", hash = "sha256:b28e72ac7a98be3d28ad28570299a393dfcd32e5e3f6a353dec94675767b6319"},
 ]
 markupsafe = [
     {file = "MarkupSafe-2.0.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:d8446c54dc28c01e5a2dbac5a25f071f6653e6e40f3a8818e8b45d790fe6ef53"},
@@ -1349,8 +1319,4 @@ virtualenv = [
 wcwidth = [
     {file = "wcwidth-0.2.5-py2.py3-none-any.whl", hash = "sha256:beb4802a9cebb9144e99086eff703a642a13d6a0052920003a230f3294bbe784"},
     {file = "wcwidth-0.2.5.tar.gz", hash = "sha256:c4d647b99872929fdb7bdcaa4fbe7f01413ed3d98077df798530e5b04f116c83"},
-]
-win32-setctime = [
-    {file = "win32_setctime-1.0.3-py3-none-any.whl", hash = "sha256:dc925662de0a6eb987f0b01f599c01a8236cb8c62831c22d9cada09ad958243e"},
-    {file = "win32_setctime-1.0.3.tar.gz", hash = "sha256:4e88556c32fdf47f64165a2180ba4552f8bb32c1103a2fafd05723a0bd42bd4b"},
 ]
