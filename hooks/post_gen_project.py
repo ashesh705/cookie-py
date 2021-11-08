@@ -8,7 +8,7 @@ import sys
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, NamedTuple, Optional
+from typing import Any, NamedTuple, Optional
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -45,7 +45,7 @@ class _Task(NamedTuple):
     """Task to execute during cleanup stage"""
 
     func: Callable
-    args: Optional[Iterable] = None
+    args: Optional[tuple] = None
 
 
 def run(cmd: list) -> str:
@@ -169,7 +169,9 @@ class PyEnv:  # pragma: no cover
         return path
 
 
-class Git:
+class Git:  # pragma: no cover
+    """Coverage disabled as this cannot be tested in CI environment"""
+
     command = "git"
 
     @classmethod
@@ -278,7 +280,7 @@ class PreCommit:  # pragma: no cover
         if directory.is_dir() is False:
             raise Failure(f"{directory} is not a valid directory")
 
-        logger.info(f"Installing pre-commit hooks")
+        logger.info("Installing pre-commit hooks")
 
         os.chdir(directory)
         run([cls.command, "install"])
@@ -291,7 +293,7 @@ class PreCommit:  # pragma: no cover
         if directory.is_dir() is False:
             raise Failure(f"{directory} is not a valid directory")
 
-        logger.info(f"Running pre-commit hooks on all current files")
+        logger.info("Running pre-commit hooks on all current files")
 
         os.chdir(directory)
         run([cls.command, "run", "--all-files"])
@@ -346,6 +348,9 @@ if __name__ == "__main__":
 
         # Cleanup
         for task in cleanup_stack:
-            task.func(*task.args)
+            if task.args is None:
+                task.func()
+            else:
+                task.func(*task.args)
 
         sys.exit(1)
